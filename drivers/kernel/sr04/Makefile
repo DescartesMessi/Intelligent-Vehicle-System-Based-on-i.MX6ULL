@@ -8,7 +8,8 @@ ARCH ?= arm
 CROSS_COMPILE ?= arm-linux-gnueabihf-
 
 MODULE_NAME := smarthome_sr04
-KERNEL_RELEASE ?= 4.1.15+
+KERNEL_RELEASE := $(strip $(shell cat \
+	$(KERNEL_BUILD)/include/config/kernel.release 2>/dev/null))
 
 obj-m += $(MODULE_NAME).o
 ccflags-y += -I$(src)/home/pointer/imx6ull/projects/Vehicle-system/include/uapi

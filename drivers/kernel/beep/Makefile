@@ -10,7 +10,8 @@ ARCH ?= arm
 CROSS_COMPILE ?= arm-linux-gnueabihf-
 
 MODULE_NAME := smarthome_beep
-KERNEL_RELEASE := 4.1.15
+KERNEL_RELEASE := $(shell cat \
+	$(KERNEL_BUILD)/include/config/kernel.release 2>/dev/null)
 
 obj-m += $(MODULE_NAME).o
 #表示这些名称不是实际文件，而是 Makefile 的操作目标。可以执行：make\make modules\make clean\make install

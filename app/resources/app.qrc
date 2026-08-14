@@ -1,0 +1,24 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="style.qss">style.qss</file>
+    </qresource>
+
+    <qresource prefix="/icons">
+        <file alias="music.png">icons/music.png</file>
+        <file alias="video.png">icons/video.png</file>
+        <file alias="diagnostic.png">icons/diagnostic.png</file>
+        <file alias="sentinel.png">icons/sentinel.png</file>
+        <file alias="reverse.png">icons/reverse.png</file>
+        <file alias="camera.png">icons/photo.png</file>
+    </qresource>
+
+    <qresource prefix="/video">
+        <file alias="play.png">icons/btn_play1.png</file>
+        <file alias="pause.png">icons/btn_pause1.png</file>
+        <file alias="next.png">icons/btn_next1.png</file>
+        <file alias="volume-down.png">icons/btn_volumedown1.png</file>
+        <file alias="volume-up.png">icons/btn_volumeup1.png</file>
+        <file alias="fullscreen.png">icons/btn_fullscreen1.png</file>
+        <file alias="windowed.png">icons/btn_fullscreen2.png</file>
+    </qresource>
+</RCC>

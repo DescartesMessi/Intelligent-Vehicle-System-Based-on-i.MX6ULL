@@ -33,7 +33,7 @@ $(TARGET): $(SRC) \
 install: $(TARGET)
 	install -D -m 0755 \
 	$(TARGET) \
-	$(ROOTFS)/usr/bin/$(TARGET)
+	$(ROOTFS)/usr/local/bin/$(TARGET)
 
 clean:
 	rm -f $(TARGET)

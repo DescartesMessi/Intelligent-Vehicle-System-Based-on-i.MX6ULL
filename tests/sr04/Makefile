@@ -1,30 +1,25 @@
-BSP_ROOT ?= /home/pointer/imx6ull/projects/imx6ull-nxp-bsp
-
 CROSS_COMPILE ?= arm-linux-gnueabihf-
 CC := $(CROSS_COMPILE)gcc
 
-ROOTFS ?= $(BSP_ROOT)/deploy/nfs/rootfs
-INSTALL_DIR := $(ROOTFS)/usr/bin
+PROJECT_ROOT := $(abspath ../..)
+ROOTFS ?= /home/pointer/imx6ull/projects/imx6ull-nxp-bsp/deploy/nfs/rootfs
 
 TARGET := test_sr04
-SRC := test_sr04.c
+SOURCE := test_sr04.c
 
-CFLAGS := -O2 -Wall -Wextra -std=gnu99
-CPPFLAGS := -I../../include/uapi
+CPPFLAGS += -I$(PROJECT_ROOT)/include/uapi
+CFLAGS += -O2 -Wall -Wextra
 
 .PHONY: all clean install
 
 all: $(TARGET)
 
-$(TARGET): $(SRC)
-	$(CC) $(CPPFLAGS) $(CFLAGS) \
-		$< -o $@
+$(TARGET): $(SOURCE)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $<
 
 install: $(TARGET)
-	mkdir -p $(INSTALL_DIR)
-	install -m 0755 \
-		$(TARGET) \
-		$(INSTALL_DIR)/$(TARGET)
+	mkdir -p $(ROOTFS)/usr/local/bin
+	install -m 0755 $(TARGET) $(ROOTFS)/usr/local/bin/$(TARGET)
 
 clean:
 	rm -f $(TARGET)

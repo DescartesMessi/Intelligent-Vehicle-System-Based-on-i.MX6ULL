@@ -1,0 +1,207 @@
+#homePage,
+#audioPage {
+    background-color: #101820;
+    color: #ffffff;
+}
+
+#audioTitleLabel {
+    color: #ffffff;
+    font-size: 25px;
+    font-weight: bold;
+}
+
+#audioLeftPanel,
+#audioRightPanel {
+    background-color: #182734;
+    border: 1px solid #324b5e;
+    border-radius: 12px;
+}
+
+#audioSongList {
+    background-color: #14212c;
+    border: none;
+    color: #e8f1f8;
+    font-size: 18px;
+    outline: none;
+}
+
+#audioSongList::item {
+    height: 42px;
+    padding-left: 10px;
+    border-bottom: 1px solid #263c4d;
+}
+
+#audioSongList::item:selected {
+    background-color: #1976a8;
+    color: #ffffff;
+}
+
+#currentSongLabel {
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+#audioStatusLabel {
+    color: #70d6ff;
+    font-size: 15px;
+}
+
+#audioAlbumLabel {
+    background-color: #0d1720;
+    border: 2px solid #31495b;
+    border-radius: 110px;
+    color: #70d6ff;
+    font-size: 32px;
+    font-weight: bold;
+}
+
+#audioBackButton,
+#audioRefreshButton,
+#audioPreviousButton,
+#audioPlayButton,
+#audioNextButton,
+#audioStopButton {
+    min-height: 38px;
+    background-color: #263f52;
+    border: 1px solid #4d718a;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 17px;
+    padding-left: 12px;
+    padding-right: 12px;
+}
+
+#audioBackButton:pressed,
+#audioRefreshButton:pressed,
+#audioPreviousButton:pressed,
+#audioPlayButton:pressed,
+#audioNextButton:pressed,
+#audioStopButton:pressed {
+    background-color: #1384bd;
+}
+
+#audioDurationSlider::groove:horizontal,
+#audioVolumeSlider::groove:horizontal {
+    height: 8px;
+    background-color: #324859;
+    border-radius: 4px;
+}
+
+#audioDurationSlider::sub-page:horizontal,
+#audioVolumeSlider::sub-page:horizontal {
+    background-color: #20a4e0;
+    border-radius: 4px;
+}
+
+#audioDurationSlider::handle:horizontal,
+#audioVolumeSlider::handle:horizontal {
+    width: 18px;
+    margin-top: -5px;
+    margin-bottom: -5px;
+    background-color: #ffffff;
+    border-radius: 9px;
+}
+
+
+#videoPage {
+    background-color: #0b131a;
+    color: #ffffff;
+}
+
+#videoTitleLabel {
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+#videoSurface {
+    background-color: #000000;
+    border: 1px solid #314b5d;
+    color: #6b8292;
+    font-size: 24px;
+}
+
+#videoRightPanel {
+    background-color: #172631;
+    border: 1px solid #30495b;
+    border-radius: 8px;
+}
+
+#videoList {
+    background-color: #111d26;
+    border: none;
+    color: #ffffff;
+    font-size: 17px;
+    outline: none;
+}
+
+#videoList::item {
+    height: 42px;
+    padding-left: 8px;
+    border-bottom: 1px solid #263b4b;
+}
+
+#videoList::item:selected {
+    background-color: #1976a8;
+}
+
+#currentVideoLabel {
+    color: #ffffff;
+    font-size: 17px;
+}
+
+#videoStatusLabel {
+    color: #70d6ff;
+    font-size: 14px;
+}
+
+#videoBackButton,
+#videoRefreshButton,
+#videoStopButton {
+    background-color: #263f52;
+    border: 1px solid #4d718a;
+    border-radius: 7px;
+    color: #ffffff;
+    font-size: 16px;
+}
+
+#videoPlayButton,
+#videoNextButton,
+#videoVolumeDownButton,
+#videoVolumeUpButton,
+#videoFullscreenButton {
+    background-color: #263f52;
+    border: 1px solid #4d718a;
+    border-radius: 22px;
+}
+
+#videoPlayButton:pressed,
+#videoNextButton:pressed,
+#videoVolumeDownButton:pressed,
+#videoVolumeUpButton:pressed,
+#videoFullscreenButton:pressed {
+    background-color: #1384bd;
+}
+
+#videoDurationSlider::groove:horizontal,
+#videoVolumeSlider::groove:horizontal {
+    height: 7px;
+    background-color: #324859;
+    border-radius: 3px;
+}
+
+#videoDurationSlider::sub-page:horizontal,
+#videoVolumeSlider::sub-page:horizontal {
+    background-color: #20a4e0;
+    border-radius: 3px;
+}
+
+#videoDurationSlider::handle:horizontal,
+#videoVolumeSlider::handle:horizontal {
+    width: 16px;
+    margin-top: -5px;
+    margin-bottom: -5px;
+    background-color: #ffffff;
+    border-radius: 8px;
+}

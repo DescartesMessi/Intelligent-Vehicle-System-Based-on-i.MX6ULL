@@ -4,7 +4,7 @@ CROSS_COMPILE ?= arm-linux-gnueabihf-
 CC := $(CROSS_COMPILE)gcc
 
 ROOTFS ?= $(BSP_ROOT)/deploy/nfs/rootfs
-INSTALL_DIR := $(ROOTFS)/usr/bin
+INSTALL_DIR := $(ROOTFS)/usr/local/bin
 
 TARGET := test_back_key
 SRC := test_back_key.c
