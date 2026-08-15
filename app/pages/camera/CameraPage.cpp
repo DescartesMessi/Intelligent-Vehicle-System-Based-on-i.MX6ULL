@@ -8,14 +8,18 @@
 #include <QFileInfo>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QMutexLocker>
 #include <QPixmap>
 #include <QPushButton>
+#include <QTimer>
 #include <QVBoxLayout>
 
-CameraPage::CameraPage(const QString &photoDirectory, QWidget *parent)
+CameraPage::CameraPage(const QString &photoDirectory,
+                       QWidget *parent)
     : QWidget(parent),
       m_photoDirectory(photoDirectory),
       m_cameraService(new V4l2CameraService(this)),
+      m_previewTimer(new QTimer(this)),
       m_titleLabel(new QLabel(QStringLiteral("摄像头与拍照"), this)),
       m_previewLabel(new QLabel(QStringLiteral("等待摄像头画面"), this)),
       m_photoLabel(new QLabel(QStringLiteral("照片预览"), this)),
@@ -29,15 +33,7 @@ CameraPage::CameraPage(const QString &photoDirectory, QWidget *parent)
     setObjectName(QStringLiteral("cameraPage"));
     setFixedSize(800, 480);
 
-    m_titleLabel->setObjectName(QStringLiteral("cameraTitleLabel"));
-    m_previewLabel->setObjectName(QStringLiteral("cameraPreviewLabel"));
-    m_photoLabel->setObjectName(QStringLiteral("cameraPhotoLabel"));
-    m_statusLabel->setObjectName(QStringLiteral("cameraStatusLabel"));
-    m_deviceComboBox->setObjectName(QStringLiteral("cameraDeviceComboBox"));
-    m_backButton->setObjectName(QStringLiteral("cameraBackButton"));
-    m_refreshButton->setObjectName(QStringLiteral("cameraRefreshButton"));
-    m_startButton->setObjectName(QStringLiteral("cameraStartButton"));
-    m_photoButton->setObjectName(QStringLiteral("cameraPhotoButton"));
+    m_previewTimer->setInterval(100);
 
     m_titleLabel->setAlignment(Qt::AlignCenter);
     m_statusLabel->setAlignment(Qt::AlignCenter);
@@ -93,35 +89,62 @@ CameraPage::CameraPage(const QString &photoDirectory, QWidget *parent)
     mainLayout->addLayout(headerLayout);
     mainLayout->addLayout(contentLayout, 1);
 
-    connect(m_backButton, &QPushButton::clicked,
-            this, &CameraPage::returnToHome);
+    connect(m_backButton,
+            &QPushButton::clicked,
+            this,
+            &CameraPage::returnToHome);
 
-    connect(m_refreshButton, &QPushButton::clicked,
-            this, &CameraPage::scanCameraDevices);
+    connect(m_refreshButton,
+            &QPushButton::clicked,
+            this,
+            &CameraPage::scanCameraDevices);
 
-    connect(m_startButton, &QPushButton::clicked,
-            this, &CameraPage::startOrStopCamera);
+    connect(m_startButton,
+            &QPushButton::clicked,
+            this,
+            &CameraPage::startOrStopCamera);
 
-    connect(m_photoButton, &QPushButton::clicked,
-            this, &CameraPage::capturePhoto);
+    connect(m_photoButton,
+            &QPushButton::clicked,
+            this,
+            &CameraPage::capturePhoto);
 
-    connect(m_cameraService, &V4l2CameraService::frameReady,
-            this, &CameraPage::onFrameReady);
+    /*
+     * 这里只保存最新帧，不直接操作界面控件。
+     * 避免摄像头线程不断向 GUI 事件队列塞入旧帧。
+     */
+    connect(m_cameraService,
+            &V4l2CameraService::frameReady,
+            this,
+            &CameraPage::onFrameReady,
+            Qt::DirectConnection);
 
-    connect(m_cameraService, &V4l2CameraService::captureStarted,
-            this, &CameraPage::onCaptureStarted);
+    connect(m_previewTimer,
+            &QTimer::timeout,
+            this,
+            &CameraPage::refreshPreview);
 
-    connect(m_cameraService, &V4l2CameraService::captureStopped,
-            this, &CameraPage::onCaptureStopped);
+    connect(m_cameraService,
+            &V4l2CameraService::captureStarted,
+            this,
+            &CameraPage::onCaptureStarted);
 
-    connect(m_cameraService, &V4l2CameraService::errorOccurred,
-            this, &CameraPage::onCameraError);
+    connect(m_cameraService,
+            &V4l2CameraService::captureStopped,
+            this,
+            &CameraPage::onCaptureStopped);
+
+    connect(m_cameraService,
+            &V4l2CameraService::errorOccurred,
+            this,
+            &CameraPage::onCameraError);
 
     scanCameraDevices();
 }
 
 CameraPage::~CameraPage()
 {
+    m_previewTimer->stop();
     m_cameraService->stopCapture();
 }
 
@@ -130,19 +153,21 @@ void CameraPage::scanCameraDevices()
     if (m_cameraService->isCapturing())
         m_cameraService->stopCapture();
 
+    m_previewTimer->stop();
+
+    {
+        QMutexLocker locker(&m_frameMutex);
+        m_pendingFrame = QImage();
+    }
+
     m_deviceComboBox->clear();
 
-    for (int index = 0; index < 10; ++index) {
-        const QString devicePath =
-            QStringLiteral("/dev/video%1").arg(index);
+    const QString devicePath(QStringLiteral("/dev/video1"));
+    QFileInfo deviceInfo(devicePath);
 
-        QFileInfo deviceInfo(devicePath);
-
-        if (!deviceInfo.exists())
-            continue;
-
+    if (deviceInfo.exists()) {
         m_deviceComboBox->addItem(
-            QStringLiteral("video%1").arg(index),
+            QStringLiteral("USB摄像头 video1"),
             devicePath);
     }
 
@@ -153,11 +178,12 @@ void CameraPage::scanCameraDevices()
 
     if (hasCamera) {
         m_statusLabel->setText(
-            QStringLiteral("检测到 %1 个视频设备")
-                .arg(m_deviceComboBox->count()));
+            QStringLiteral("已检测到摄像头：/dev/video1"));
     } else {
-        m_statusLabel->setText(QStringLiteral("未检测到摄像头"));
-        m_previewLabel->setText(QStringLiteral("无摄像头设备"));
+        m_statusLabel->setText(
+            QStringLiteral("未检测到摄像头：/dev/video1"));
+        m_previewLabel->setText(
+            QStringLiteral("摄像头不可用"));
     }
 }
 
@@ -173,28 +199,40 @@ void CameraPage::startOrStopCamera()
         m_deviceComboBox->currentData().toString();
 
     if (devicePath.isEmpty()) {
-        m_statusLabel->setText(QStringLiteral("请选择摄像头设备"));
+        m_statusLabel->setText(
+            QStringLiteral("请选择摄像头设备"));
         return;
     }
 
     m_startButton->setEnabled(false);
-    m_statusLabel->setText(QStringLiteral("正在打开 %1").arg(devicePath));
+    m_statusLabel->setText(
+        QStringLiteral("正在打开 %1").arg(devicePath));
 
-    m_cameraService->startCapture(devicePath, 640, 480, 15);
+    /*
+     * 先使用较低分辨率和帧率验证流畅性。
+     */
+    m_cameraService->startCapture(
+        devicePath,
+        320,
+        240,
+        10);
 }
 
 void CameraPage::capturePhoto()
 {
     if (m_currentFrame.isNull()) {
-        m_statusLabel->setText(QStringLiteral("当前没有可保存的画面"));
+        m_statusLabel->setText(
+            QStringLiteral("当前没有可保存的画面"));
         return;
     }
 
     QDir photoDir(m_photoDirectory);
 
-    if (!photoDir.exists() && !photoDir.mkpath(QStringLiteral("."))) {
+    if (!photoDir.exists() &&
+        !photoDir.mkpath(QStringLiteral("."))) {
         m_statusLabel->setText(
-            QStringLiteral("无法创建照片目录：%1").arg(m_photoDirectory));
+            QStringLiteral("无法创建照片目录：%1")
+                .arg(m_photoDirectory));
         return;
     }
 
@@ -204,26 +242,32 @@ void CameraPage::capturePhoto()
 
     const QString filePath =
         photoDir.filePath(
-            QStringLiteral("photo_%1.bmp").arg(timestamp));
+            QStringLiteral("photo_%1.bmp")
+                .arg(timestamp));
 
     if (!m_currentFrame.save(filePath, "BMP")) {
         m_statusLabel->setText(
-            QStringLiteral("照片保存失败：%1").arg(filePath));
+            QStringLiteral("照片保存失败：%1")
+                .arg(filePath));
         return;
     }
 
-    const QPixmap thumbnail = QPixmap::fromImage(m_currentFrame).scaled(
-        m_photoLabel->size(),
-        Qt::KeepAspectRatio,
-        Qt::SmoothTransformation);
+    const QPixmap thumbnail =
+        QPixmap::fromImage(m_currentFrame).scaled(
+            m_photoLabel->size(),
+            Qt::KeepAspectRatio,
+            Qt::FastTransformation);
 
     m_photoLabel->setPixmap(thumbnail);
+
     m_statusLabel->setText(
-        QStringLiteral("照片已保存：%1").arg(filePath));
+        QStringLiteral("照片已保存：%1")
+            .arg(filePath));
 }
 
 void CameraPage::returnToHome()
 {
+    m_previewTimer->stop();
     m_cameraService->stopCapture();
     emit backRequested();
 }
@@ -233,12 +277,34 @@ void CameraPage::onFrameReady(const QImage &image)
     if (image.isNull())
         return;
 
-    m_currentFrame = image.copy();
+    /*
+     * QImage 使用隐式共享，赋值不会立即深拷贝。
+     * 这里只保留最新帧。
+     */
+    QMutexLocker locker(&m_frameMutex);
+    m_pendingFrame = image;
+}
 
-    const QPixmap preview = QPixmap::fromImage(image).scaled(
-        m_previewLabel->size(),
-        Qt::KeepAspectRatio,
-        Qt::FastTransformation);
+void CameraPage::refreshPreview()
+{
+    QImage frame;
+
+    {
+        QMutexLocker locker(&m_frameMutex);
+
+        if (m_pendingFrame.isNull())
+            return;
+
+        frame = m_pendingFrame;
+    }
+
+    m_currentFrame = frame;
+
+    const QPixmap preview =
+        QPixmap::fromImage(frame).scaled(
+            m_previewLabel->size(),
+            Qt::KeepAspectRatio,
+            Qt::FastTransformation);
 
     m_previewLabel->setPixmap(preview);
     m_photoButton->setEnabled(true);
@@ -254,6 +320,8 @@ void CameraPage::onCaptureStarted(const QString &devicePath,
     m_deviceComboBox->setEnabled(false);
     m_refreshButton->setEnabled(false);
 
+    m_previewTimer->start();
+
     m_statusLabel->setText(
         QStringLiteral("%1  %2×%3  %4")
             .arg(devicePath)
@@ -264,7 +332,15 @@ void CameraPage::onCaptureStarted(const QString &devicePath,
 
 void CameraPage::onCaptureStopped()
 {
-    m_startButton->setEnabled(m_deviceComboBox->count() > 0);
+    m_previewTimer->stop();
+
+    {
+        QMutexLocker locker(&m_frameMutex);
+        m_pendingFrame = QImage();
+    }
+
+    m_startButton->setEnabled(
+        m_deviceComboBox->count() > 0);
     m_startButton->setText(QStringLiteral("开始"));
     m_deviceComboBox->setEnabled(true);
     m_refreshButton->setEnabled(true);
@@ -273,8 +349,11 @@ void CameraPage::onCaptureStopped()
 
 void CameraPage::onCameraError(const QString &message)
 {
+    m_previewTimer->stop();
+
     m_statusLabel->setText(message);
-    m_startButton->setEnabled(m_deviceComboBox->count() > 0);
+    m_startButton->setEnabled(
+        m_deviceComboBox->count() > 0);
     m_startButton->setText(QStringLiteral("开始"));
     m_deviceComboBox->setEnabled(true);
     m_refreshButton->setEnabled(true);
@@ -284,6 +363,7 @@ void CameraPage::onCameraError(const QString &message)
 QString CameraPage::fourccToString(quint32 format) const
 {
     char text[5];
+
     text[0] = format & 0xff;
     text[1] = (format >> 8) & 0xff;
     text[2] = (format >> 16) & 0xff;
