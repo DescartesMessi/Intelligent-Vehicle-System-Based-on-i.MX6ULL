@@ -2,11 +2,13 @@
 #define CAMERA_PAGE_H
 
 #include <QImage>
+#include <QMutex>
 #include <QWidget>
 
 class QComboBox;
 class QLabel;
 class QPushButton;
+class QTimer;
 
 class V4l2CameraService;
 
@@ -29,10 +31,12 @@ private slots:
     void returnToHome();
 
     void onFrameReady(const QImage &image);
+    void refreshPreview();
+
     void onCaptureStarted(const QString &devicePath,
-                          int width,
-                          int height,
-                          quint32 pixelFormat);
+                        int width,
+                        int height,
+                        quint32 pixelFormat);
     void onCaptureStopped();
     void onCameraError(const QString &message);
 
@@ -41,9 +45,14 @@ private:
 
 private:
     QString m_photoDirectory;
+
     QImage m_currentFrame;
 
+    QMutex m_frameMutex;
+    QImage m_pendingFrame;
+
     V4l2CameraService *m_cameraService;
+    QTimer *m_previewTimer;
 
     QLabel *m_titleLabel;
     QLabel *m_previewLabel;
