@@ -1,9 +1,13 @@
 #ifndef HOME_PAGE_H
 #define HOME_PAGE_H
 
+#include <QIcon>
+#include <QString>
 #include <QWidget>
 
 class QLabel;
+class QHideEvent;
+class QShowEvent;
 class QTimer;
 class QToolButton;
 
@@ -20,12 +24,22 @@ signals:
     void reverseRequested();
     void sentinelRequested();
     void diagnosticRequested();
+    void cameraRequested();
+
+protected:
+    void showEvent(QShowEvent *event) override;
+    void hideEvent(QHideEvent *event) override;
 
 private slots:
     void updateDateTime();
+    void updateEnvironment();
 
 private:
-    QToolButton *createEntryButton(const QString &text,const QString &iconPath,const QIcon &fallbackIcon);
+    QToolButton *createEntryButton(
+        const QString &text,
+        const QString &iconPath,
+        const QIcon &fallbackIcon);
+
     QLabel *createPanelTitle(const QString &text);
 
 private:
@@ -34,7 +48,9 @@ private:
     QLabel *m_temperatureLabel;
     QLabel *m_humidityLabel;
     QLabel *m_statusLabel;
+
     QTimer *m_clockTimer;
+    QTimer *m_environmentTimer;
 };
 
 #endif
