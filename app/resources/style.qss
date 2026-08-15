@@ -205,3 +205,72 @@
     background-color: #ffffff;
     border-radius: 8px;
 }
+
+#cameraPage {
+    background-color: #0d1720;
+    color: #ffffff;
+}
+
+#cameraTitleLabel {
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+#cameraPreviewLabel {
+    background-color: #000000;
+    border: 2px solid #304b5e;
+    border-radius: 8px;
+    color: #718696;
+    font-size: 23px;
+}
+
+#cameraControlPanel {
+    background-color: #172733;
+    border: 1px solid #304b5e;
+    border-radius: 10px;
+}
+
+#cameraPhotoLabel {
+    background-color: #0a1117;
+    border: 1px solid #3f5c70;
+    color: #8295a3;
+}
+
+#cameraStatusLabel {
+    color: #70d6ff;
+    font-size: 13px;
+}
+
+#cameraDeviceComboBox {
+    min-height: 38px;
+    background-color: #203746;
+    border: 1px solid #4d718a;
+    border-radius: 6px;
+    color: #ffffff;
+    font-size: 16px;
+    padding-left: 7px;
+}
+
+#cameraBackButton,
+#cameraRefreshButton,
+#cameraStartButton,
+#cameraPhotoButton {
+    background-color: #263f52;
+    border: 1px solid #4d718a;
+    border-radius: 7px;
+    color: #ffffff;
+    font-size: 16px;
+}
+
+#cameraBackButton:pressed,
+#cameraRefreshButton:pressed,
+#cameraStartButton:pressed,
+#cameraPhotoButton:pressed {
+    background-color: #1384bd;
+}
+
+#cameraPhotoButton:disabled {
+    background-color: #263039;
+    color: #687781;
+}
