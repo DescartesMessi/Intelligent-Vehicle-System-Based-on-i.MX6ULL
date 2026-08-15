@@ -114,6 +114,17 @@ void MPlayerVideoPlayer::startMPlayer()
 
     arguments << QStringLiteral("-framedrop");
 
+    arguments << QStringLiteral("-hardframedrop");
+    arguments << QStringLiteral("-autosync");
+    arguments << QStringLiteral("30");
+    arguments << QStringLiteral("-cache");
+    arguments << QStringLiteral("8192");
+    arguments << QStringLiteral("-cache-min");
+    arguments << QStringLiteral("10");
+    arguments << QStringLiteral("-lavdopts");
+    arguments << QStringLiteral("fast:threads=2");
+
+
     m_process.start(m_playerPath, arguments);
 }
 
