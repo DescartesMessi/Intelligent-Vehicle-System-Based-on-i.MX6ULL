@@ -90,12 +90,13 @@ int main(int argc, char *argv[])
         styleFile.close();
     } else {
         qWarning() << "Failed to open style resource:"
-                   << styleFile.errorString();
+                << styleFile.errorString();
     }
 
     MainWindow window(
         QStringLiteral("/music"),
-        QStringLiteral("/video"));
+        QStringLiteral("/video"),
+        QStringLiteral("/photo"));
 
     window.showFullScreen();
 
