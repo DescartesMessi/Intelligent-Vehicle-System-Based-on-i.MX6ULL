@@ -13,7 +13,16 @@ SOURCES += \
     app/pages/media/AudioPage.cpp \
     app/pages/video/VideoPage.cpp \
     services/audio/MPlayerAudioPlayer.cpp \
-    services/video/MPlayerVideoPlayer.cpp
+    services/video/MPlayerVideoPlayer.cpp \
+    services/sensors/BoardDeviceService.cpp \
+    app/pages/board/BoardDevicePage.cpp \
+    app/pages/camera/CameraPage.cpp \
+    services/camera/V4l2CameraService.cpp \
+    services/sentinel/MjpgStreamerService.cpp \
+    services/sentinel/SentinelService.cpp \
+    app/pages/sentinel/SentinelPage.cpp \
+    services/reverse/ReverseService.cpp \
+    app/pages/reverse/ReversePage.cpp
 
 HEADERS += \
     app/MainWindow.h \
@@ -21,7 +30,16 @@ HEADERS += \
     app/pages/media/AudioPage.h \
     app/pages/video/VideoPage.h \
     services/audio/MPlayerAudioPlayer.h \
-    services/video/MPlayerVideoPlayer.h
+    services/video/MPlayerVideoPlayer.h \
+    services/sensors/BoardDeviceService.h \
+    app/pages/board/BoardDevicePage.h \
+    app/pages/camera/CameraPage.h \
+    services/camera/V4l2CameraService.h \
+    services/sentinel/MjpgStreamerService.h \
+    services/sentinel/SentinelService.h \
+    app/pages/sentinel/SentinelPage.h \
+    services/reverse/ReverseService.h \
+    app/pages/reverse/ReversePage.h
 
 RESOURCES += \
     app/resources/app.qrc
@@ -32,7 +50,16 @@ INCLUDEPATH += \
     app/pages/media \
     app/pages/video \
     services/audio \
-    services/video
+    services/video \
+    services/sensors \
+    include/uapi \
+    app/pages/board \
+    app/pages/camera \
+    services/camera \
+    services/sentinel \
+    app/pages/sentinel \
+    services/reverse \
+    app/pages/reverse
 
 QMAKE_LFLAGS += -Wl,-rpath,/usr/local/qt5/lib
 QMAKE_LFLAGS += -Wl,--enable-new-dtags
