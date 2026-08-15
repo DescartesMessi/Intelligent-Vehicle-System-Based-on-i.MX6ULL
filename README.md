@@ -28,7 +28,7 @@ V4L2 MMAP 采集 `/dev/video1`；YUYV图像转换、实时预览、手动拍照�
 ###  哨兵远程监控
 SR501检测人体后自动启动 MJPG-streamer，开启 HTTP-MJPEG 视频流；内网浏览器远程访问监控画面。
 
-## 🧰 软硬件环境
+##  软硬件环境
 ### 硬件
 - 主控：NXP i.MX6ULL
 - 显示屏：800×480 LCD，GT9147电容触摸
@@ -41,7 +41,7 @@ SR501检测人体后自动启动 MJPG-streamer，开启 HTTP-MJPEG 视频流；�
 - 第三方组件：MPlayer、MJPG-streamer、libjpeg-turbo
 - 文件系统：NFS 网络根文件系统
 
-## 📂 项目目录
+##  项目目录
 ```c
 Vehicle-system/
 ├── app/                # 主程序、所有 UI 页面
