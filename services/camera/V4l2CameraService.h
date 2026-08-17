@@ -17,9 +17,9 @@ public:
     ~V4l2CameraService();
 
     bool startCapture(const QString &devicePath,
-                      int width = 640,
-                      int height = 480,
-                      int framesPerSecond = 15);
+                    int width = 640,
+                    int height = 480,
+                    int framesPerSecond = 15);
 
     void stopCapture();
     bool isCapturing() const;
