@@ -1,5 +1,7 @@
 #include "HomePage.h"
 
+#include "MetricsProbe.h"
+
 #include <QDateTime>
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -32,6 +34,8 @@ HomePage::HomePage(QWidget *parent)
       m_clockTimer(new QTimer(this)),
       m_environmentTimer(new QTimer(this))
 {
+    vsmetrics::log(QStringLiteral("  [首页] 构造开始"));
+
     setFixedSize(800, 480);
     setObjectName(QStringLiteral("homePage"));
 
@@ -68,6 +72,8 @@ HomePage::HomePage(QWidget *parent)
     layout->setVerticalSpacing(16);
 
     QWidget *timePanel = new QWidget(this);
+
+    vsmetrics::log(QStringLiteral("  [首页] 样式表+网格布局完成"));
     timePanel->setStyleSheet(
         "QWidget {"
         "    background-color: #ffffff;"
@@ -97,6 +103,8 @@ HomePage::HomePage(QWidget *parent)
 
     timeLayout->addWidget(m_timeLabel);
     timeLayout->addWidget(m_dateLabel);
+
+    vsmetrics::log(QStringLiteral("  [首页] 时间面板完成"));
 
     QWidget *environmentPanel = new QWidget(this);
     environmentPanel->setStyleSheet(
@@ -129,6 +137,8 @@ HomePage::HomePage(QWidget *parent)
     environmentLayout->addWidget(m_humidityLabel);
     environmentLayout->addStretch();
 
+    vsmetrics::log(QStringLiteral("  [首页] 温湿度面板完成"));
+
     QToolButton *cameraButton = new QToolButton(this);
     cameraButton->setObjectName(
         QStringLiteral("homeCameraButton"));
@@ -140,6 +150,53 @@ HomePage::HomePage(QWidget *parent)
         Qt::ToolButtonTextBesideIcon);
     cameraButton->setFixedHeight(58);
 
+    vsmetrics::log(QStringLiteral("  [首页] 摄像头按钮完成"));
+
+    /*
+     * 退出程序按钮：紧挨摄像头按钮放在同一行。
+     * 单独用红色描边区分，避免和普通功能入口混淆；
+     * 实际退出动作由 MainWindow 处理（带一次确认），
+     * HomePage 只负责发出 exitRequested() 信号。
+     */
+    QToolButton *exitButton = new QToolButton(this);
+    exitButton->setObjectName(QStringLiteral("homeExitButton"));
+    exitButton->setText(QStringLiteral("退出"));
+    exitButton->setIcon(
+        style()->standardIcon(QStyle::SP_DialogCloseButton));
+    exitButton->setIconSize(QSize(34, 34));
+    exitButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    exitButton->setFixedHeight(58);
+    exitButton->setFixedWidth(104);
+    exitButton->setStyleSheet(
+        "QToolButton#homeExitButton {"
+        "    background-color: #fff5f5;"
+        "    border: 2px solid #f0b8b8;"
+        "    border-radius: 18px;"
+        "    color: #c62828;"
+        "    font-size: 19px;"
+        "    font-weight: bold;"
+        "    padding: 8px;"
+        "}"
+        "QToolButton#homeExitButton:hover {"
+        "    background-color: #ffe3e3;"
+        "    border: 2px solid #e05252;"
+        "}"
+        "QToolButton#homeExitButton:pressed {"
+        "    background-color: #ffc9c9;"
+        "}"
+    );
+
+    QWidget *cameraRow = new QWidget(this);
+
+    QHBoxLayout *cameraRowLayout = new QHBoxLayout(cameraRow);
+
+    cameraRowLayout->setContentsMargins(0, 0, 0, 0);
+    cameraRowLayout->setSpacing(10);
+    cameraRowLayout->addWidget(cameraButton, 1);
+    cameraRowLayout->addWidget(exitButton, 0);
+
+    vsmetrics::log(QStringLiteral("  [首页] 退出按钮+一行布局完成"));
+
     QWidget *leftTopPanel = new QWidget(this);
 
     QVBoxLayout *leftTopLayout =
@@ -149,13 +206,15 @@ HomePage::HomePage(QWidget *parent)
     leftTopLayout->setSpacing(10);
     leftTopLayout->addWidget(timePanel);
     leftTopLayout->addWidget(environmentPanel);
-    leftTopLayout->addWidget(cameraButton);
+    leftTopLayout->addWidget(cameraRow);
     leftTopLayout->addStretch();
 
     QToolButton *musicButton = createEntryButton(
         QStringLiteral("播放音乐"),
         QStringLiteral(":/icons/music.png"),
         style()->standardIcon(QStyle::SP_MediaPlay));
+
+    vsmetrics::log(QStringLiteral("  [首页] 时间/环境面板完成"));
 
     QToolButton *videoButton = createEntryButton(
         QStringLiteral("播放视频"),
@@ -185,6 +244,8 @@ HomePage::HomePage(QWidget *parent)
     layout->addWidget(diagnosticButton, 2, 0, 2, 1);
     layout->addWidget(sentinelButton, 2, 1, 2, 1);
     layout->addWidget(reverseButton, 2, 2, 2, 1);
+
+    vsmetrics::log(QStringLiteral("  [首页] 7 个入口按钮完成"));
 
     layout->setColumnStretch(0, 4);
     layout->setColumnStretch(1, 3);
@@ -246,6 +307,13 @@ HomePage::HomePage(QWidget *parent)
         emit cameraRequested();
     });
 
+    connect(exitButton,
+            &QToolButton::clicked,
+            this,
+            [this]() {
+        emit exitRequested();
+    });
+
     connect(m_clockTimer,
             &QTimer::timeout,
             this,
@@ -257,7 +325,33 @@ HomePage::HomePage(QWidget *parent)
             &HomePage::updateEnvironment);
 
     updateDateTime();
+
+    vsmetrics::log(QStringLiteral("  [首页] 构造结束"));
+    /* 先显示首页，延迟读取 DHT11，避免传感器阻塞启动过程 */
+    m_temperatureLabel->setText(QStringLiteral("温度 -- ℃"));
+    m_humidityLabel->setText(QStringLiteral("湿度 -- %"));
+    m_statusLabel->setText(QStringLiteral("系统状态：正常    DHT11：等待读取"));
+
+    /* 设置温湿度读取周期 */
+    m_environmentTimer->setInterval(2500);
+
+    /* 延迟 1500ms 读取第一次温湿度 */
+    QTimer::singleShot(1500, this, [this]() {
+        updateEnvironment();
+        m_environmentTimer->start();
+    });
+
+    /* 启动时间显示定时器 */
+    m_clockTimer->start(1000);
 }
+
+
+
+
+
+
+
+
 
 void HomePage::showEvent(QShowEvent *event)
 {

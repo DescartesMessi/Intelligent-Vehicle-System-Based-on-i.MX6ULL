@@ -25,6 +25,7 @@ SOURCES += \
     app/pages/reverse/ReversePage.cpp
 
 HEADERS += \
+    app/MetricsProbe.h \
     app/MainWindow.h \
     app/pages/home/HomePage.h \
     app/pages/media/AudioPage.h \

@@ -5,6 +5,13 @@ set -Eeuo pipefail
 export ARCH=arm
 export CROSS_COMPILE="${CROSS_COMPILE:-arm-linux-gnueabihf-}"
 
+# 强制 C locale：交叉工具链的 readelf/file 等会跟随系统 locale 输出本地化文本
+# （例如中文环境下 readelf -h 输出“类别/系统架构”），
+# 会让下面按英文关键字（Class/Machine）做的架构校验匹配失败，
+# 在 set -o pipefail 下直接中断整个构建。
+export LC_ALL=C
+export LANG=C
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 

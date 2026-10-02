@@ -1,11 +1,14 @@
 #include "V4l2CameraService.h"
 
+#include "MetricsProbe.h"
+
 #include <algorithm>
 #include <cerrno>
 #include <cstring>
 #include <vector>
 
 #include <QMutexLocker>
+#include <QElapsedTimer>
 
 #include <fcntl.h>
 #include <linux/videodev2.h>
@@ -15,6 +18,13 @@
 #include <unistd.h>
 
 namespace {
+
+/*
+ * 两次 YUYV->RGB 转换之间的最小间隔。
+ * 界面刷新定时器是 100ms，这里取 80ms 略快一点，
+ * 保证界面每次刷新都能拿到较新的帧，同时把无人消费的帧直接丢弃。
+ */
+constexpr qint64 kMinConvertIntervalMs = 80;
 
 struct MappedBuffer
 {
@@ -275,6 +285,26 @@ void V4l2CameraService::run()
                             actualHeight,
                             pixelFormat);
 
+        /*
+         * 帧率节流：
+         * 界面按固定节奏取帧（CameraPage 的刷新定时器为 100ms），
+         * 而 UVC 摄像头通常以 30fps 交付。若对每一帧都做 YUYV->RGB
+         * 转换，约 2/3 的转换结果根本不会被显示，纯属浪费 CPU——
+         * 本板 CPU 只有 396MHz，这部分开销很可观。
+         * 这里按略快于界面刷新的节奏（80ms）限制转换次数，
+         * 未做转换的帧直接重新入队，不产生任何额外开销。
+         */
+        QElapsedTimer frameThrottle;
+        frameThrottle.start();
+        qint64 lastConvertMs = -kMinConvertIntervalMs;
+
+        /* 指标采集：驱动交付帧数 / 实际转换（解码）帧数 */
+        quint64 framesDequeued = 0;
+        quint64 framesConverted = 0;
+        quint64 framesLastWindow = 0;
+        QElapsedTimer statsTimer;
+        statsTimer.start();
+
         while (!m_stopRequested.load()) {
             fd_set fileDescriptors;
             FD_ZERO(&fileDescriptors);
@@ -314,6 +344,8 @@ void V4l2CameraService::run()
                 break;
             }
 
+            ++framesDequeued;
+
             if (buffer.index >= buffers.size()) {
                 errorMessage = QStringLiteral("摄像头返回了无效缓冲区索引");
                 break;
@@ -323,30 +355,56 @@ void V4l2CameraService::run()
                 static_cast<const unsigned char *>(
                     buffers[buffer.index].address);
 
-            QImage image;
+            const qint64 nowMs = frameThrottle.elapsed();
 
-            if (pixelFormat == V4L2_PIX_FMT_YUYV) {
-                image = convertYuyvToRgb(frameData,
-                                         buffer.bytesused,
-                                         actualWidth,
-                                         actualHeight,
-                                         bytesPerLine);
-            } else {
-                image = QImage::fromData(frameData,
-                                         buffer.bytesused,
-                                         "JPG");
-            }
+            if (nowMs - lastConvertMs >= kMinConvertIntervalMs) {
+                lastConvertMs = nowMs;
 
-            if (!image.isNull()) {
-                emit frameReady(image);
-            } else if (pixelFormat != V4L2_PIX_FMT_YUYV) {
-                errorMessage =
-                    QStringLiteral("MJPEG解码失败，请部署Qt JPEG图片插件");
+                QImage image;
+
+                if (pixelFormat == V4L2_PIX_FMT_YUYV) {
+                    image = convertYuyvToRgb(frameData,
+                                             buffer.bytesused,
+                                             actualWidth,
+                                             actualHeight,
+                                             bytesPerLine);
+                } else {
+                    image = QImage::fromData(frameData,
+                                             buffer.bytesused,
+                                             "JPG");
+                }
+
+                if (!image.isNull()) {
+                    emit frameReady(image);
+                    ++framesConverted;
+                } else if (pixelFormat != V4L2_PIX_FMT_YUYV) {
+                    errorMessage =
+                        QStringLiteral("MJPEG解码失败，请部署Qt JPEG图片插件");
+                }
             }
 
             if (xioctl(fileDescriptor, VIDIOC_QBUF, &buffer) < 0) {
                 errorMessage = systemError(QStringLiteral("VIDIOC_QBUF"));
                 break;
+            }
+
+            if (statsTimer.elapsed() >= 2000) {
+                const double seconds = statsTimer.restart() / 1000.0;
+                const quint64 windowFrames = framesDequeued - framesLastWindow;
+
+                framesLastWindow = framesDequeued;
+
+                vsmetrics::log(
+                    QStringLiteral("CAMERA dq=%1/s conv=%2/s 累计(dq=%3 conv=%4) "
+                                   "size=%5x%6 fourcc=%7 bytes=%8")
+                        .arg(windowFrames / seconds, 0, 'f', 1)
+                        .arg(framesConverted ? framesConverted / seconds : 0.0, 0, 'f', 1)
+                        .arg(framesDequeued)
+                        .arg(framesConverted)
+                        .arg(actualWidth)
+                        .arg(actualHeight)
+                        .arg(fourccToString(pixelFormat))
+                        .arg(buffer.bytesused));
             }
 
             if (!errorMessage.isEmpty())

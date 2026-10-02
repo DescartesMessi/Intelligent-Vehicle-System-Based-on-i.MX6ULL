@@ -1,19 +1,50 @@
 #include "MPlayerAudioPlayer.h"
 
+#include "MetricsProbe.h"
+
 #include <QFileInfo>
 #include <QProcessEnvironment>
 #include <QStringList>
+#include <QStandardPaths>
 #include <QtGlobal>
+
+/*
+ * 同 MPlayerVideoPlayer：mplayer 在 NFS rootfs 位于 /usr/bin，
+ * 在 eMMC 运行 rootfs 位于 /bin，这里按候选列表探测，避免写死路径。
+ */
+static QString resolveMPlayerPath()
+{
+    const QStringList candidates = {
+        QStringLiteral("/usr/bin/mplayer"),
+        QStringLiteral("/bin/mplayer"),
+        QStringLiteral("/usr/local/bin/mplayer"),
+    };
+
+    for (const QString &path : candidates) {
+        const QFileInfo info(path);
+
+        if (info.exists() && info.isExecutable())
+            return path;
+    }
+
+    const QString fromPath =
+        QStandardPaths::findExecutable(QStringLiteral("mplayer"));
+
+    return fromPath.isEmpty() ? QStringLiteral("/usr/bin/mplayer") : fromPath;
+}
 
 MPlayerAudioPlayer::MPlayerAudioPlayer(QObject *parent)
     : QObject(parent),
-      m_playerPath(QStringLiteral("/usr/bin/mplayer")),
+      m_playerPath(resolveMPlayerPath()),
       m_paused(false),
       m_hasMedia(false),
       m_ignoreNextEof(false),
       m_quitting(false),
       m_volume(80)
 {
+    vsmetrics::log(QStringLiteral("音乐播放器 mplayer 路径: %1")
+                       .arg(m_playerPath));
+
     m_process.setProcessChannelMode(QProcess::MergedChannels);
 
     QProcessEnvironment environment = QProcessEnvironment::systemEnvironment();

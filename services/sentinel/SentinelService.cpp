@@ -1,5 +1,6 @@
 #include "SentinelService.h"
 
+#include "MetricsProbe.h"
 #include "MjpgStreamerService.h"
 #include "smarthome_sr501.h"
 
@@ -183,6 +184,8 @@ void SentinelService::pollSr501()
                 QStringLiteral(
                     "检测到人员，正在启动远程监控"));
 
+            vsmetrics::log(QStringLiteral("SENTINEL SR501 触发（sequence=%1）")
+                               .arg(status.sequence));
             m_streamer->start();
         }
     } else {

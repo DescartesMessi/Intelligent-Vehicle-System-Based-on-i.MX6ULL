@@ -25,6 +25,7 @@ signals:
     void sentinelRequested();
     void diagnosticRequested();
     void cameraRequested();
+    void exitRequested();
 
 protected:
     void showEvent(QShowEvent *event) override;

@@ -3,12 +3,13 @@
 
 #include <QImage>
 #include <QMutex>
+#include <QString>
+#include <QTimer>
 #include <QWidget>
 
 class QComboBox;
 class QLabel;
 class QPushButton;
-class QTimer;
 
 class V4l2CameraService;
 
@@ -17,8 +18,7 @@ class CameraPage : public QWidget
     Q_OBJECT
 
 public:
-    explicit CameraPage(const QString &photoDirectory,
-                        QWidget *parent = nullptr);
+    explicit CameraPage(const QString &photoDirectory, QWidget *parent = nullptr);
     ~CameraPage();
 
 signals:
@@ -29,14 +29,9 @@ private slots:
     void startOrStopCamera();
     void capturePhoto();
     void returnToHome();
-
     void onFrameReady(const QImage &image);
-    void refreshPreview();
-
-    void onCaptureStarted(const QString &devicePath,
-                        int width,
-                        int height,
-                        quint32 pixelFormat);
+    void renderLatestFrame();
+    void onCaptureStarted(const QString &devicePath,int width,int height,quint32 pixelFormat);
     void onCaptureStopped();
     void onCameraError(const QString &message);
 
@@ -48,11 +43,12 @@ private:
 
     QImage m_currentFrame;
 
-    QMutex m_frameMutex;
-    QImage m_pendingFrame;
+    QMutex m_frameMutex; /* 保护摄像头线程和界面线程之间的最新帧 */
+    QImage m_latestFrame; /* 只保存最新一帧，避免旧帧排队造成延时 */
 
     V4l2CameraService *m_cameraService;
-    QTimer *m_previewTimer;
+
+    QTimer *m_renderTimer; /* 定时从最新帧缓存中刷新界面 */
 
     QLabel *m_titleLabel;
     QLabel *m_previewLabel;

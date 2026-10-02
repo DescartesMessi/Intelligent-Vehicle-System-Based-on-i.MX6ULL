@@ -4,12 +4,17 @@
     </qresource>
 
     <qresource prefix="/icons">
-        <file alias="music.png">icons/music.png</file>
-        <file alias="video.png">icons/video.png</file>
-        <file alias="diagnostic.png">icons/diagnostic.png</file>
-        <file alias="sentinel.png">icons/sentinel.png</file>
-        <file alias="reverse.png">icons/reverse.png</file>
-        <file alias="camera.png">icons/photo.png</file>
+        <!--
+            首页入口图标按 86x86 显示，这里统一用预缩放的 172x172（2 倍）资源。
+            原来直接用 1254x1254 原图（单张 1.1~1.4MB），Qt 每次构造首页都要
+            解码并以大比例缩小，是启动耗时的主要来源。
+        -->
+        <file alias="music.png">icons/small_music.png</file>
+        <file alias="video.png">icons/small_video.png</file>
+        <file alias="diagnostic.png">icons/small_diagnostic.png</file>
+        <file alias="sentinel.png">icons/small_sentinel.png</file>
+        <file alias="reverse.png">icons/small_reverse.png</file>
+        <file alias="camera.png">icons/small_photo.png</file>
     </qresource>
 
     <qresource prefix="/video">

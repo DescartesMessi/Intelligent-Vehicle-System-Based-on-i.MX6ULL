@@ -318,10 +318,10 @@ void ReversePage::takePhoto()
     }
 
     const QPixmap thumbnail =
-        QPixmap::fromImage(image).scaled(
+        QPixmap::fromImage(image.scaled(
             m_photoLabel->size(),
             Qt::KeepAspectRatio,
-            Qt::SmoothTransformation);
+            Qt::SmoothTransformation));
 
     m_photoLabel->setPixmap(thumbnail);
 
@@ -363,10 +363,10 @@ void ReversePage::renderLatestFrame()
     }
 
     const QPixmap preview =
-        QPixmap::fromImage(image).scaled(
+        QPixmap::fromImage(image.scaled(
             m_previewLabel->size(),
             Qt::KeepAspectRatio,
-            Qt::FastTransformation);
+            Qt::FastTransformation));
 
     m_previewLabel->setPixmap(preview);
 }
